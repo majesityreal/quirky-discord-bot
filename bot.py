@@ -4,6 +4,7 @@ from discord.ext import tasks
 import requests
 import json
 import random
+from discord import FFmpegPCMAudio
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -61,16 +62,15 @@ async def on_ready():
     # starts the automated cat facts for all servers
     print(f'We have logged in as {client.user}')
     for channel in client.get_all_channels():
+        global channels
         if channel.name == "catfacts":
-            global channels
             channels.append(channel)    
             print('Cat Fact timer has been added to channel list for server ' + str(channel.guild))
+        if channel.name == "typing-channel":
+            typingChannels.append(channel)
+            print('Typing channel has been added to channel list for server ' + str(channel.guild))
     # starts timer for list of channels
     automated_cat_fact.start()
-    # add typing message channel to the list TODO - make this in my specific server
-    channel = client.get_channel(1044312979841233056)
-    print (channel)
-    typingChannels.append(channel)
 
 
 
@@ -118,28 +118,34 @@ async def on_guild_join(guild):
     print('joined guild ' + str(guild.id))
     global isCatfactsChannel
     isCatfactsChannel = False
+    global isTypingChannel
+    isTypingChannel = False
     # checking to see if there is a catfacts channel
     for channel in guild.channels:
         if channel.name == "catfacts":
             isCatfactsChannel = True
+        if channel.name == "typing-status":
+            isTypingChannel = True
     # if there is no catfacts channel, create one
     if isCatfactsChannel == False:
         channel = await guild.create_text_channel('catfacts') #then, in the channel_create method it will start the timer
+    if isTypingChannel == False:
+        channel = await guild.create_text_channel('typing-channel')
     # create the role for random mute, mute of shame
-    await guild.create_role(name="Mute of Shame", colour=discord.Colour(0x800000))
+    # await guild.create_role(name="Mute of Shame", colour=discord.Colour(0x800000))
 
 
 # FIXME - this only handles for one server, with one voice channel at a time
 @client.event
 async def on_voice_state_update(member, before, after):
     # if someone is joining
-    if before.channel == None:
+    if before.channel == None and member != client.user:
         # if this is first joiner, start timer
         if len(after.channel.members) <= 1 and random_voice_channel.is_running() == False:
-            random_voice_channel.start()
+            random_voice_channel.start(after.channel)
     # if someone is leaving
     if after.channel == None:
-        if len(after.channel.members) <= 1 and random_voice_channel.is_running() == True:
+        if len(before.channel.members) == 0 and random_voice_channel.is_running() == True:
             random_voice_channel.stop()
 
 
@@ -158,25 +164,44 @@ async def on_guild_channel_delete(channel):
     if channel in channels:
         channels.remove(channel)
 
-@tasks.loop(hours=12.0)
-async def mute_random_user(guild):
-    num_members = guild.member_count
-    random_value = random.randint(0,num_members - 1)
-    member = guild.members[random_value]
-    role = discord.utils.get(guild.roles, name="Mute of Shame")
-    await member.add_roles(role)
+# TODO - add mute!
+# @tasks.loop(hours=12.0)
+# async def mute_random_user(guild):
+#     num_members = guild.member_count
+#     random_value = random.randint(0,num_members - 1)
+#     member = guild.members[random_value]
+#     role = discord.utils.get(guild.roles, name="Mute of Shame")
+#     await member.add_roles(role)
     # TODO - mute the user, and then unmute the previous user
 
 
 @tasks.loop(seconds=1.0)
 async def random_voice_channel(channel):
-    if (random.randint(1,50) == 5):
-        # TODO - scream here
+    voice = discord.utils.get(client.voice_clients, guild=channel.guild)
+    if (random.randint(1,10) == 5 and voice == None):
+        # play rick roll lol
+        voiceChannel = await channel.connect()
+        source = FFmpegPCMAudio('rickroll.mp3')
+        player = voiceChannel.play(source)
+        # set a task to disconnect
+        global loop
+        loop = 0
+        end_rick_roll.start(channel)
+
+        # disconnect
         print ("LOL scream here")
-    pass
+
+@tasks.loop(seconds=5.0)
+async def end_rick_roll(voiceChannel):
+    global loop
+    print (loop)
+    if client.user in voiceChannel.members and loop == 1:
+        await voiceChannel.guild.voice_client.disconnect()
+        end_rick_roll.stop()
+    loop += 1
 
 # TODO - make it so that it finds the cat facts channel and if it isnt there then it doesnt send anything
-@tasks.loop(seconds=5.0)
+@tasks.loop(minutes=5.0)
 async def automated_cat_fact():
     # TODO, if you want it to get different fact for every server, have it fetch inside for loop
     # leaving it this way for now to minimize calls to API
