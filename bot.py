@@ -175,7 +175,7 @@ async def on_guild_channel_delete(channel):
     # TODO - mute the user, and then unmute the previous user
 
 
-@tasks.loop(seconds=1.0)
+@tasks.loop(minutes=2.0)
 async def random_voice_channel(channel):
     voice = discord.utils.get(client.voice_clients, guild=channel.guild)
     if (random.randint(1,10) == 5 and voice == None):
