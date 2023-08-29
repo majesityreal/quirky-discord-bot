@@ -1,2 +1,2 @@
-# useless-discord-bot
-The world's most useless discord bot
+# quirky-discord-bot
+An interesting discord bot with fun interactions
