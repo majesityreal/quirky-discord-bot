@@ -17,9 +17,10 @@ client = discord.Client(intents=intents)
 channels = []
 # channels for sending typing messages
 typingChannels = []
-high_naughty = ['fuck', 'bullshit', 'bitch', 'cock', 'cocksucker', 'dick', 'dickhead']
-medium_naughty = ['ass', 'asshole', 'bastard', 'shit', 'horseshit', 'prick']
-low_naughty = ['damn', 'arse', 'crap', 'dammit', 'goddamn', 'goddammit', 'holy shit', 'twat', 'wanker', 'bloody']
+# add words separated by a comma for each of these
+high_naughty = []
+medium_naughty = []
+low_naughty = []
 # TODO - read/write to a file
 naughty_points = {}
 
@@ -211,4 +212,4 @@ async def automated_cat_fact():
     for channel in channels:
         await channel.send(fact)
 
-client.run('MTA0MTc5NjQzMDM5NTg4MzU0MA.GL0nq_.rrN6mZlYgeEO1-Fed3ktEdiBN1RTCVRIxGVmec')
+client.run('BOT ID IS HERE, YOU WILL NOT FIND IT!')
